@@ -157,25 +157,28 @@ class Language_Model(nn.Module):
                  block_size=8,
                  embedding_n=32,
                  attention_head_size=32,
-                 num_attention_heads=4):
+                 num_attention_heads=4,
+                 num_layers=3):
         super().__init__()
         self.token_embedding = nn.Embedding(vocab_size, embedding_n)
         self.pos_embedding = nn.Embedding(block_size, embedding_n)
         self.block_size = block_size
 
-        self.blocks = nn.Sequential(
-            Block(embedding_n=embedding_n,
-                  num_heads=num_attention_heads,
-                  head_size=attention_head_size),
-            Block(embedding_n=embedding_n,
-                  num_heads=num_attention_heads,
-                  head_size=attention_head_size),
-            Block(embedding_n=embedding_n,
-                  num_heads=num_attention_heads,
-                  head_size=attention_head_size))
+        self.blocks = nn.Sequential(*[Block(embedding_n=embedding_n, num_heads=num_attention_heads, head_size=attention_head_size) for _ in range(num_layers)])
 
         self.layer_norm = nn.LayerNorm(embedding_n)
         self.linear_head = nn.Linear(embedding_n, vocab_size)
+
+        # better initialization
+        self.apply(self._init_weights)
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, source, target=None):
         B, T = source.shape[0], source.shape[1]

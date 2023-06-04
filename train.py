@@ -2,16 +2,35 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from models import Bigram_Model, Language_Model
+
 # settings and hyperparameters
 input_fname = 'input.txt'  # text file with training data
-block_size = 8  # maximum context size
-embedding_n = 32  # embedding dimension for the model
-attention_head_size = 32  # head size for self-attention
-num_attention_heads = 4
+
+# We have a small model that can be quickly trained, and a scaled up model that gets good results.
+# I am keeping both sets of hyperparameters here
+model_type = 'big'       # 'small' or 'big'
+
+if model_type == 'small':
+    # a light weight network, that should get train loss of ~2 and val loss ~1.85
+    block_size = 8             # maximum context size
+    embedding_n = 32           # embedding dimension for the model
+    attention_head_size = 32   # head size for self-attention
+    num_attention_heads = 4    # number of heads in multihead self-attetion
+    num_layers = 3             # number of Blocks
+    lr = 1e-3
+    batch_size = 64
+elif model_type == 'big':
+    block_size = 256            # maximum context size
+    embedding_n = 384           # embedding dimension for the model
+    attention_head_size = 384   # head size for self-attention
+    num_attention_heads = 6     # number of heads in multihead self-attetion
+    num_layers = 6              # number of Blocks
+    lr = 3e-4
+    batch_size = 64
+
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 num_train_iterations = 10000
-lr = 1e-3
-batch_size = 256
+torch.manual_seed(528491)
 
 # read data
 with open(input_fname, 'r') as f:
@@ -64,7 +83,8 @@ model = Language_Model(vocab_size=vocab_size,
                        block_size=block_size,
                        embedding_n=embedding_n,
                        attention_head_size=attention_head_size,
-                       num_attention_heads=num_attention_heads)
+                       num_attention_heads=num_attention_heads,
+                       num_layers=num_layers)
 model.to(device)
 
 init_vals = torch.tensor(encode('A')).unsqueeze(0).to(device)
@@ -72,11 +92,7 @@ generated = model.generate(init_vals, 100)[0]
 print('random generation before any training:')
 print(decode(generated.tolist()))
 
-# training
-
-optim = torch.optim.AdamW(model.parameters(), lr=lr)
-
-
+# val loss calulation
 @torch.no_grad()
 def calculate_val_loss(num_iterations=1000):
     val_loss = 0
@@ -88,7 +104,8 @@ def calculate_val_loss(num_iterations=1000):
     val_loss /= num_iterations
     return val_loss
 
-
+# Training
+optim = torch.optim.AdamW(model.parameters(), lr=lr)
 train_loss = 0
 
 for i in range(num_train_iterations):
@@ -103,7 +120,7 @@ for i in range(num_train_iterations):
     train_loss += loss.item()
 
     # print val loss 10 times during training
-    if i % (num_train_iterations // 10) == 0:
+    if i % (num_train_iterations // 10) == 0 or i == num_train_iterations-1:
         val_loss = calculate_val_loss()
         print(f'train loss, {(train_loss)/(i+1)}, {val_loss=}')
 
