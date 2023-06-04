@@ -137,10 +137,12 @@ class Block(nn.Module):
                                    embedding_n=embedding_n,
                                    head_size=head_size)
         self.feed_forward = FeedForward(embedding_n=embedding_n)
+        self.layer_norm1 = nn.LayerNorm(embedding_n)
+        self.layer_norm2 = nn.LayerNorm(embedding_n)
 
     def forward(self, x):
-        x = x + self.attention(x)
-        x = x + self.feed_forward(x)
+        x = x + self.attention(self.layer_norm1(x))
+        x = x + self.feed_forward(self.layer_norm2(x))
         return x
 
 
@@ -161,8 +163,6 @@ class Language_Model(nn.Module):
         self.pos_embedding = nn.Embedding(block_size, embedding_n)
         self.block_size = block_size
 
-        #self.attention_head = SelfAttention_Head(embedding_n=embedding_n, head_size=attention_head_size)
-        #self.attention_head = MultiHead(num_heads=4, embedding_n=embedding_n, head_size=attention_head_size)
         self.blocks = nn.Sequential(
             Block(embedding_n=embedding_n,
                   num_heads=num_attention_heads,
@@ -174,6 +174,7 @@ class Language_Model(nn.Module):
                   num_heads=num_attention_heads,
                   head_size=attention_head_size))
 
+        self.layer_norm = nn.LayerNorm(embedding_n)
         self.linear_head = nn.Linear(embedding_n, vocab_size)
 
     def forward(self, source, target=None):
@@ -183,9 +184,9 @@ class Language_Model(nn.Module):
             torch.arange(source.shape[1], device=source.device))
         x = seq_embedding + pos_embedding
 
-        #x = self.attention_head(x)
         x = self.blocks(x)
 
+        x = self.layer_norm(x)
         logits = self.linear_head(x)
 
         B, T, C = logits.shape
