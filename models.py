@@ -57,7 +57,6 @@ class Bigram_Model(nn.Module):
         return source
 
 
-# Self-attention model
 class SelfAttention_Head(nn.Module):
     """
     A single self-attention head, using query, key and value
@@ -99,8 +98,9 @@ class FeedForward(nn.Module):
 
     def __init__(self, embedding_n=32):
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(embedding_n, embedding_n), nn.ReLU(),
-                                 nn.Linear(embedding_n, embedding_n))
+        self.net = nn.Sequential(nn.Linear(embedding_n, 4 * embedding_n),
+                                 nn.ReLU(),
+                                 nn.Linear(4 * embedding_n, embedding_n))
 
     def forward(self, x):
         return self.net(x)
@@ -144,8 +144,11 @@ class Block(nn.Module):
         return x
 
 
-# A Generic language model, this can be used with and without self-attention
 class Language_Model(nn.Module):
+    """
+    This is the GPT-style language model we are building. We are using token and positional embeddings,
+    3 blocks (each containing multihead attention and feedforward network), and a linear output layer
+    """
 
     def __init__(self,
                  vocab_size,
@@ -200,8 +203,8 @@ class Language_Model(nn.Module):
 
     def generate(self, source, max_len=10):
         for _ in range(max_len):
-            # only use the last time step. Logits have shape B, T, C
-            s = source[:, -self.block_size:]  #.unsqueeze(1)
+            # only use previous tokens up to the max of block_size
+            s = source[:, -self.block_size:]
 
             logits, _ = self(s)
             # only use the last time-step prediction
