@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from models import Bigram_Model, Language_Model
+from gpt import GPT_Nano
 
 # settings and hyperparameters
-input_fname = 'input.txt'  # text file with training data
+input_fname = 'input_shakespeare.txt'  # text file with training data
 
 # We have a small model that can be quickly trained, and a scaled up model that gets good results.
 # I am keeping both sets of hyperparameters here
@@ -20,6 +20,7 @@ if model_type == 'small':
     lr = 1e-3
     batch_size = 64
 elif model_type == 'big':
+    # deeper network, currently getting train loss, 1.77 and val loss 1.65
     block_size = 256            # maximum context size
     embedding_n = 384           # embedding dimension for the model
     attention_head_size = 384   # head size for self-attention
@@ -79,7 +80,7 @@ def get_batch(mode='train', batch_size=4, device='cpu'):
 
 
 # model
-model = Language_Model(vocab_size=vocab_size,
+model = GPT_Nano(vocab_size=vocab_size,
                        block_size=block_size,
                        embedding_n=embedding_n,
                        attention_head_size=attention_head_size,

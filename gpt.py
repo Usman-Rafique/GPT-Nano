@@ -3,60 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-# Bigram model
-class Bigram_Model(nn.Module):
-    """
-    A very simple bigram language model that predicts next character based on the last character
-    """
-
-    def __init__(self, vocab_size, block_size=8, embedding_n=32):
-        super().__init__()
-        self.token_embedding = nn.Embedding(vocab_size, embedding_n)
-        self.pos_embedding = nn.Embedding(block_size, embedding_n)
-
-        self.block_size = block_size
-
-        self.linear_head = nn.Linear(embedding_n, vocab_size)
-
-    def forward(self, source, target=None):
-        seq_embedding = self.token_embedding(source)
-        pos_embedding = self.pos_embedding(
-            torch.arange(source.shape[1], device=seq_embedding.device))
-        embedding = seq_embedding + pos_embedding
-        logits = self.linear_head(embedding)
-
-        B, T, C = logits.shape
-
-        if target is not None:
-            logits = logits.view(B * T, C)
-            target = target.view(B * T)
-            loss = F.cross_entropy(logits, target)
-            logits = logits.view(B, T, C)
-
-        else:
-            loss = None
-
-        return logits, loss
-
-    def generate(self, source, max_len=10):
-        for _ in range(max_len):
-            # only use the last time step. Logits have shape B, T, C
-            s = source[:, -1].unsqueeze(1)
-
-            logits, _ = self(s)
-
-            logits = logits.squeeze(
-                1)  # the time dimension is 1, get rid of that
-            probs = torch.softmax(logits, dim=1)
-
-            # instead of picking the max probablitiy index (through argmax), we sample from the distribution
-            next_char_prediction = torch.multinomial(probs, num_samples=1)
-
-            source = torch.cat([source, next_char_prediction], dim=1)
-
-        return source
-
-
 class SelfAttention_Head(nn.Module):
     """
     A single self-attention head, using query, key and value
@@ -146,7 +92,7 @@ class Block(nn.Module):
         return x
 
 
-class Language_Model(nn.Module):
+class GPT_Nano(nn.Module):
     """
     This is the GPT-style language model we are building. We are using token and positional embeddings,
     3 blocks (each containing multihead attention and feedforward network), and a linear output layer
