@@ -14,7 +14,8 @@ class SelfAttention_Head(nn.Module):
         self.key = nn.Linear(embedding_n, head_size, bias=False)
         self.value = nn.Linear(embedding_n, head_size, bias=False)
 
-        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+        self.register_buffer('tril',
+                             torch.tril(torch.ones(block_size, block_size)))
 
         self.dropout = nn.Dropout(dropout)
 
@@ -30,7 +31,7 @@ class SelfAttention_Head(nn.Module):
 
         #mask = torch.ones(T, T).to(device)
         #tril = torch.tril(mask)
-        weight = weight.masked_fill(self.tril[:T,:T] == 0,
+        weight = weight.masked_fill(self.tril[:T, :T] == 0,
                                     torch.tensor(float('-inf')).to(device))
 
         weight = torch.softmax(weight * (q.shape[-1]**(-0.5)), dim=2)
@@ -63,7 +64,12 @@ class MultiHead(nn.Module):
     is concatenated, and then fed to a linear projection layer
     """
 
-    def __init__(self, num_heads, head_size, embedding_n=32, dropout=0.0, block_size=8):
+    def __init__(self,
+                 num_heads,
+                 head_size,
+                 embedding_n=32,
+                 dropout=0.0,
+                 block_size=8):
         super().__init__()
         self.heads = nn.ModuleList([
             SelfAttention_Head(embedding_n,

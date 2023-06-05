@@ -11,7 +11,7 @@ input_fname = 'input_shakespeare.txt'  # text file with training data
 model_type = 'big'  # 'small' or 'big'
 
 if model_type == 'small':
-    # a light weight network, that should get train loss of ~2 and val loss ~1.85
+    # ToDo: add expected train and val loss
     block_size = 8  # maximum context size
     embedding_n = 32  # embedding dimension for the model
     num_attention_heads = 4  # number of heads in multihead self-attetion
@@ -20,7 +20,8 @@ if model_type == 'small':
     batch_size = 64
     dropout = 0.0
 elif model_type == 'big':
-    # deeper network, currently getting train loss, 1.77 and val loss 1.65
+    # deeper network, currently getting loss XXXX
+    # ToDo: add expected train and val loss
     block_size = 256  # maximum context size
     embedding_n = 384  # embedding dimension for the model
     num_attention_heads = 6  # number of heads in multihead self-attetion
@@ -33,7 +34,6 @@ device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 num_train_iterations = 5000
 
 torch.manual_seed(1337)
-#torch.manual_seed(528491)
 
 # read data
 with open(input_fname, 'r') as f:
@@ -111,6 +111,7 @@ def calculate_val_loss(num_iterations=1000):
     val_loss /= num_iterations
     model.train()
     return val_loss
+
 
 print(f'starting training on {device=}')
 
