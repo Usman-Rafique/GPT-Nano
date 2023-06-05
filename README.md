@@ -18,6 +18,7 @@ While I am closely following the video lecture to code GPT-Nano, these are some 
 
 The planned next steps are
 
+- [ ] Update expected train and val losses (for both light and big models)
 - [ ] Add a `generate` script
 - [ ] Train on another (fun) dataset, suggestions welcome :)
 - [ ] Add installation / virtual environment instructions
