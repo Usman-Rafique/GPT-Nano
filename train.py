@@ -14,20 +14,20 @@ if model_type == 'small':
     # a light weight network, that should get train loss of ~2 and val loss ~1.85
     block_size = 8             # maximum context size
     embedding_n = 32           # embedding dimension for the model
-    attention_head_size = 32   # head size for self-attention
     num_attention_heads = 4    # number of heads in multihead self-attetion
     num_layers = 3             # number of Blocks
     lr = 1e-3
     batch_size = 64
+    dropout = 0.0
 elif model_type == 'big':
     # deeper network, currently getting train loss, 1.77 and val loss 1.65
     block_size = 256            # maximum context size
     embedding_n = 384           # embedding dimension for the model
-    attention_head_size = 384   # head size for self-attention
     num_attention_heads = 6     # number of heads in multihead self-attetion
     num_layers = 6              # number of Blocks
     lr = 3e-4
     batch_size = 64
+    dropout = 0.2
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 num_train_iterations = 10000
@@ -83,9 +83,9 @@ def get_batch(mode='train', batch_size=4, device='cpu'):
 model = GPT_Nano(vocab_size=vocab_size,
                        block_size=block_size,
                        embedding_n=embedding_n,
-                       attention_head_size=attention_head_size,
                        num_attention_heads=num_attention_heads,
-                       num_layers=num_layers)
+                       num_layers=num_layers,
+                       dropout=dropout)
 model.to(device)
 
 init_vals = torch.tensor(encode('A')).unsqueeze(0).to(device)
@@ -96,6 +96,7 @@ print(decode(generated.tolist()))
 # val loss calulation
 @torch.no_grad()
 def calculate_val_loss(num_iterations=1000):
+    model.eval()
     val_loss = 0
     for _ in range(num_iterations):
         source, target = get_batch('val', device=device)
@@ -103,6 +104,7 @@ def calculate_val_loss(num_iterations=1000):
         val_loss += loss.item()
 
     val_loss /= num_iterations
+    model.train()
     return val_loss
 
 # Training
