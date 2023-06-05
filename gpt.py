@@ -30,7 +30,7 @@ class SelfAttention_Head(nn.Module):
         tril = torch.tril(mask)
         weight = weight.masked_fill(tril == 0,
                                     torch.tensor(float('-inf')).to(device))
-        
+
         weight = torch.softmax(weight * (q.shape[-1]**(-0.5)), dim=2)
         weight = self.dropout(weight)
         # finally, get the logits by multiplying weight with value
@@ -61,11 +61,12 @@ class MultiHead(nn.Module):
     is concatenated, and then fed to a linear projection layer
     """
 
-    def __init__(self, num_heads, head_size, embedding_n=32):
+    def __init__(self, num_heads, head_size, embedding_n=32, dropout=0.0):
         super().__init__()
         self.heads = nn.ModuleList([
-            SelfAttention_Head(embedding_n, head_size=head_size)
-            for _ in range(num_heads)
+            SelfAttention_Head(embedding_n,
+                               head_size=head_size,
+                               dropout=dropout) for _ in range(num_heads)
         ])
         self.projection = nn.Linear(head_size * num_heads, embedding_n)
 
@@ -84,10 +85,12 @@ class Block(nn.Module):
         super().__init__()
         # calculate head size here
         head_size = embedding_n // num_heads
-        self.attention = MultiHead(num_heads=4,
+        self.attention = MultiHead(num_heads=num_heads,
                                    embedding_n=embedding_n,
-                                   head_size=head_size)
-        self.feed_forward = FeedForward(embedding_n=embedding_n, dropout=dropout)
+                                   head_size=head_size,
+                                   dropout=dropout)
+        self.feed_forward = FeedForward(embedding_n=embedding_n,
+                                        dropout=dropout)
         self.layer_norm1 = nn.LayerNorm(embedding_n)
         self.layer_norm2 = nn.LayerNorm(embedding_n)
 
@@ -115,9 +118,11 @@ class GPT_Nano(nn.Module):
         self.pos_embedding = nn.Embedding(block_size, embedding_n)
         self.block_size = block_size
 
-        self.blocks = nn.Sequential(*[Block(embedding_n=embedding_n,
-                                            num_heads=num_attention_heads,
-                                            dropout=dropout) for _ in range(num_layers)])
+        self.blocks = nn.Sequential(*[
+            Block(embedding_n=embedding_n,
+                  num_heads=num_attention_heads,
+                  dropout=dropout) for _ in range(num_layers)
+        ])
 
         self.layer_norm = nn.LayerNorm(embedding_n)
         self.linear_head = nn.Linear(embedding_n, vocab_size)
