@@ -8,11 +8,13 @@ class SelfAttention_Head(nn.Module):
     A single self-attention head, using query, key and value
     """
 
-    def __init__(self, embedding_n=32, head_size=32, dropout=0.0):
+    def __init__(self, embedding_n=32, head_size=32, dropout=0.0, block_size=8):
         super().__init__()
         self.query = nn.Linear(embedding_n, head_size, bias=False)
         self.key = nn.Linear(embedding_n, head_size, bias=False)
         self.value = nn.Linear(embedding_n, head_size, bias=False)
+
+        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
 
         self.dropout = nn.Dropout(dropout)
 
@@ -26,9 +28,9 @@ class SelfAttention_Head(nn.Module):
 
         weight = k @ q.transpose(2, 1)
 
-        mask = torch.ones(T, T).to(device)
-        tril = torch.tril(mask)
-        weight = weight.masked_fill(tril == 0,
+        #mask = torch.ones(T, T).to(device)
+        #tril = torch.tril(mask)
+        weight = weight.masked_fill(self.tril[:T,:T] == 0,
                                     torch.tensor(float('-inf')).to(device))
 
         weight = torch.softmax(weight * (q.shape[-1]**(-0.5)), dim=2)
@@ -61,12 +63,13 @@ class MultiHead(nn.Module):
     is concatenated, and then fed to a linear projection layer
     """
 
-    def __init__(self, num_heads, head_size, embedding_n=32, dropout=0.0):
+    def __init__(self, num_heads, head_size, embedding_n=32, dropout=0.0, block_size=8):
         super().__init__()
         self.heads = nn.ModuleList([
             SelfAttention_Head(embedding_n,
                                head_size=head_size,
-                               dropout=dropout) for _ in range(num_heads)
+                               dropout=dropout,
+                               block_size=block_size) for _ in range(num_heads)
         ])
         self.projection = nn.Linear(head_size * num_heads, embedding_n)
 
@@ -81,14 +84,15 @@ class Block(nn.Module):
     A MultiHead (attention) and a FeedForward module, both with skip connections
     """
 
-    def __init__(self, embedding_n=32, num_heads=4, dropout=0.0):
+    def __init__(self, embedding_n=32, num_heads=4, dropout=0.0, block_size=8):
         super().__init__()
         # calculate head size here
         head_size = embedding_n // num_heads
         self.attention = MultiHead(num_heads=num_heads,
                                    embedding_n=embedding_n,
                                    head_size=head_size,
-                                   dropout=dropout)
+                                   dropout=dropout,
+                                   block_size=block_size)
         self.feed_forward = FeedForward(embedding_n=embedding_n,
                                         dropout=dropout)
         self.layer_norm1 = nn.LayerNorm(embedding_n)
@@ -121,7 +125,8 @@ class GPT_Nano(nn.Module):
         self.blocks = nn.Sequential(*[
             Block(embedding_n=embedding_n,
                   num_heads=num_attention_heads,
-                  dropout=dropout) for _ in range(num_layers)
+                  dropout=dropout,
+                  block_size=block_size) for _ in range(num_layers)
         ])
 
         self.layer_norm = nn.LayerNorm(embedding_n)

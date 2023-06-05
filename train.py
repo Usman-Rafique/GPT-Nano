@@ -112,6 +112,7 @@ def calculate_val_loss(num_iterations=1000):
     model.train()
     return val_loss
 
+print(f'starting training on {device=}')
 
 # Training
 optim = torch.optim.AdamW(model.parameters(), lr=lr)
