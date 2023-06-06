@@ -8,19 +8,19 @@ input_fname = 'input_shakespeare.txt'  # text file with training data
 
 # We have a small model that can be quickly trained, and a scaled up model that gets good results.
 # I am keeping both sets of hyperparameters here
-model_type = 'big'  # 'small' or 'big'
+model_type = 'small'  # 'small' or 'big'
 
 if model_type == 'small':
-    # ToDo: add expected train and val loss
+    # a smaller network getting train loss 2.17 and val loss 1.92
     block_size = 8  # maximum context size
     embedding_n = 32  # embedding dimension for the model
     num_attention_heads = 4  # number of heads in multihead self-attetion
     num_layers = 3  # number of Blocks
-    lr = 1e-3
+    lr = 3e-4
     batch_size = 64
     dropout = 0.0
 elif model_type == 'big':
-    # deeper network, currently getting loss XXXX
+    # deeper network, currently getting train loss 1.2, val loss 0.54
     # ToDo: add expected train and val loss
     block_size = 256  # maximum context size
     embedding_n = 384  # embedding dimension for the model
@@ -136,7 +136,7 @@ for i in range(num_train_iterations):
         print(f'train loss, {(train_loss)/(i+1)}, {val_loss=}')
 
 # save checkpoint, just in case
-fname = 'model_weights.pth'
+fname = 'model_weights_' + model_type + '_' + input_fname + '.pth'
 torch.save(model.state_dict(), fname)
 print('finished training')
 
