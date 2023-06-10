@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from gpt import GPT_Nano
+import tqdm
 
 # settings and hyperparameters
 input_fname = 'input_shakespeare.txt'  # text file with training data
@@ -113,13 +114,18 @@ def calculate_val_loss(num_iterations=1000):
     return val_loss
 
 
+model = torch.compile(model)
+
 print(f'starting training on {device=}')
 
 # Training
 optim = torch.optim.AdamW(model.parameters(), lr=lr)
 train_loss = 0
 
-for i in range(num_train_iterations):
+min_val_loss = float('inf')
+
+pbar = tqdm.trange(num_train_iterations)
+for i in pbar:
     optim.zero_grad(set_to_none=True)
     source, target = get_batch('train', device=device, batch_size=batch_size)
 
@@ -131,9 +137,13 @@ for i in range(num_train_iterations):
     train_loss += loss.item()
 
     # print val loss 10 times during training
-    if i % (num_train_iterations // 10) == 0 or i == num_train_iterations - 1:
+    if i % (num_train_iterations // 100) == 0 or i == num_train_iterations - 1:
         val_loss = calculate_val_loss()
-        print(f'train loss, {(train_loss)/(i+1)}, {val_loss=}')
+        pbar.set_description(f'train loss:{(train_loss)/(i+1):.4f}, {val_loss=:.4f}')
+        if val_loss < min_val_loss:
+            min_val_loss = val_loss
+            fname = 'model_weights_' + model_type + '_' + input_fname + '_best.pth'
+            torch.save(model.state_dict(), fname)
 
 # save checkpoint, just in case
 fname = 'model_weights_' + model_type + '_' + input_fname + '.pth'
@@ -148,3 +158,11 @@ for _ in range(5):
     init_vals = start_char.unsqueeze(0).to(device)
     generated = model.generate(init_vals, 200)[0]
     print('===============================\n', decode(generated.tolist()))
+
+# save results to a text file
+start_char = torch.zeros((1,)).long()
+init_vals = start_char.unsqueeze(0).to(device)
+fname_output = 'generated_text_' + model_type + '_' + input_fname + '.pth'
+with open(fname_output, 'w') as f:
+    generated = model.generate(init_vals, 5000)[0]
+    f.write(decode(generated.tolist()))
