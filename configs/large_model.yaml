@@ -1,0 +1,17 @@
+# model
+model_name: 'nanoGPT_large'
+block_size: 256  # maximum context size
+embedding_n: 384
+num_attention_heads: 6
+num_layers: 6  # number of Blocks in the transformer
+
+# optimization
+lr: 3e-4
+batch_size: 64
+dropout: 0.2
+num_train_iterations: 5000
+
+compile_model: True # requires PyTorch 2, but it is much faster
+
+# training dataset
+input_fname: 'data/shakespeare.txt' # other option: 'data/sherlock_holmes.txt'
