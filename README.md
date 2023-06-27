@@ -9,11 +9,27 @@ But since we are only modeling characters, and working with limited data (and wo
 
 ## Usage
 
-Currently, all the settings are in the `train.py` file. There are two options for `model_type` in `train.py`: `small` and `big`. You should be able to train the `small` model on a CPU machine/laptop. For the `big` model, you probably need a GPU machine -- this model takes around 4.3 G memory on GPU.
+All the settings are in configuration files located at `configs/`. There are two model variants in `configs `: `large_model.yaml` and `small_model.yaml`.  For the  large model, you probably need a GPU machine -- this model takes around 4.3 G memory on GPU.
+
+To train the model, simply run `python train.py`. By default, the `small_model.yaml` config file will be loaded. To load the large model, run 
+
+```
+python train.py config_file=configs/large_model.yaml
+```
+
+You can also override any setting in the config file through command line. For example, to change batch size to 8, use
+
+```
+python train.py batch_size=8 
+```
 
 ## Datasets
 
-We start with a dataset of William Shakespeare. I have compiled a dataset of Sherlock Holmes as well. (attribution and links in the acknowledgement section below)
+We start with a dataset of William Shakespeare. I have compiled a dataset of Sherlock Holmes as well. (attribution and links in the acknowledgement section below). Both datasets are available in `data/`. When training, the default data is Shakespeare. To train a model on Sherlock Holmes dataset, run the command
+
+```
+python train.py input_fname=data/sherlock_holmes.txt
+```
 
 ## Sample Output
 
@@ -76,7 +92,7 @@ The planned next steps are
 - [x] Train on another (fun) dataset, suggestions welcome :)
 - [ ] Upload trained network checkpoints
 - [ ] Add installation / virtual environment instructions
-- [ ] Add command line arguments?
+- [x] Add command line arguments?
 - [ ] Try some other encoding, such as BPE
 
 # Acknowledgements
